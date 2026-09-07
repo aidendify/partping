@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ job.part_name }} · {{ business_name }}{% endblock %}
+{% block content %}
+<section class="card public-card">
+  <p class="hint">{{ business_name }}</p>
+  <h1>Parts status</h1>
+  <p class="lede">For {{ job.customer_name }}{% if job.job_ref %} · Job {{ job.job_ref }}{% endif %}</p>
+
+  <h2>{{ job.part_name }}</h2>
+  <p class="amount-big">{{ milestone_label(job.milestone) }}</p>
+  <p class="hint">{{ format_eta_display(job.eta_date) }}</p>
+
+  <h2>Timeline</h2>
+  <ul class="timeline">
+    {% for e in events %}
+    <li>
+      <div>
+        <span class="kind">
+          {% if e.kind == 'created' %}Part ordered
+          {% elif e.kind == 'milestone' and e.milestone %}{{ milestone_label(e.milestone) }}
+          {% elif e.kind == 'eta' %}{{ e.note or 'ETA updated' }}
+          {% elif e.kind == 'note' %}{{ e.note or 'Note' }}
+          {% else %}{{ e.kind }}{% endif %}
+        </span>
+        {% if e.note and e.kind == 'milestone' %}<div class="hint">{{ e.note }}</div>{% endif %}
+      </div>
+      <span class="at">{{ e.at }} UTC</span>
+    </li>
+    {% else %}
+    <li class="empty">No updates yet.</li>
+    {% endfor %}
+  </ul>
+
+  <p class="hint" style="margin-top:1.25rem;">Questions? Call us.{% if business_phone %} {{ business_phone }}{% endif %}</p>
+</section>
+{% endblock %}

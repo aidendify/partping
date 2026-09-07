@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{% if closed_view %}Closed{% else %}Open{% endif %} jobs · PartPing{% endblock %}
+{% block content %}
+<div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1>{% if closed_view %}Closed / cancelled{% else %}Open parts jobs{% endif %}</h1>
+    <p class="lede">{% if closed_view %}Terminal jobs, newest update first.{% else %}Newest update first. Share the magic link so customers stop calling.{% endif %}</p>
+  </div>
+  <a class="btn" href="{{ url_for('new_job') }}">New job</a>
+</div>
+
+<div class="filters">
+  <a href="{{ url_for('index') }}" class="{% if not closed_view %}is-on{% endif %}">Open</a>
+  <a href="{{ url_for('closed_jobs') }}" class="{% if closed_view %}is-on{% endif %}">Closed</a>
+</div>
+
+{% if not jobs %}
+<section class="card">
+  <p class="empty">{% if closed_view %}No closed or cancelled jobs yet.{% else %}No open parts jobs. Create one when a part is ordered.{% endif %}</p>
+</section>
+{% else %}
+<section class="card table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Customer</th>
+        <th>Part</th>
+        <th>Milestone</th>
+        <th>ETA</th>
+        <th>Last update</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for j in jobs %}
+      <tr>
+        <td><a href="{{ url_for('job_detail', job_id=j.id) }}">{{ j.customer_name }}</a></td>
+        <td>{{ j.part_name }}</td>
+        <td><span class="badge badge-{{ j.milestone }}">{{ milestone_label(j.milestone) }}</span></td>
+        <td>{{ j.eta_date or "—" }}</td>
+        <td>{{ j.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

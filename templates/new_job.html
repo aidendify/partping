@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}New job · PartPing{% endblock %}
+{% block content %}
+<p class="crumb"><a href="{{ url_for('index') }}">Jobs</a> · New</p>
+<section class="card">
+  <h1>New parts job</h1>
+  <p class="lede">Create a status page when a part is ordered. Milestone starts at Ordered.</p>
+  <form method="post" action="{{ url_for('new_job') }}" class="stack">
+    <label>Customer name *
+      <input name="customer_name" required value="{{ form.customer_name if form else '' }}">
+    </label>
+    <label>Customer email
+      <input type="email" name="customer_email" value="{{ form.customer_email if form else '' }}">
+    </label>
+    <label>Customer phone <span class="hint">(E.164 preferred for SMS)</span>
+      <input name="customer_phone" value="{{ form.customer_phone if form else '' }}">
+    </label>
+    <label>Job / WO ref
+      <input name="job_ref" value="{{ form.job_ref if form else '' }}">
+    </label>
+    <label>Part name *
+      <input name="part_name" required value="{{ form.part_name if form else '' }}">
+    </label>
+    <label>Distributor
+      <input name="distributor" value="{{ form.distributor if form else '' }}" placeholder="Johnstone, local supply…">
+    </label>
+    <label>Notes <span class="hint">(internal)</span>
+      <textarea name="notes" rows="3">{{ form.notes if form else '' }}</textarea>
+    </label>
+    <label>ETA date
+      <input type="date" name="eta_date" value="{{ form.eta_date if form else '' }}">
+    </label>
+    <button type="submit" class="btn">Create job</button>
+  </form>
+</section>
+{% endblock %}
