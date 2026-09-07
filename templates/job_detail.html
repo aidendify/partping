@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ job.part_name }} · PartPing{% endblock %}
+{% block content %}
+<p class="crumb no-print"><a href="{{ url_for('index') }}">Jobs</a> · #{{ job.id }}</p>
+
+<section class="card">
+  <div class="seq-head">
+    <div>
+      <h1>{{ job.part_name }}</h1>
+      <p class="lede">{{ job.customer_name }}{% if job.job_ref %} · Job {{ job.job_ref }}{% endif %}</p>
+    </div>
+    <span class="badge badge-{{ job.milestone }}">{{ milestone_label(job.milestone) }}</span>
+  </div>
+
+  <dl class="facts">
+    <div>
+      <dt>ETA</dt>
+      <dd>{{ format_eta_display(job.eta_date) }}</dd>
+    </div>
+    <div>
+      <dt>Distributor</dt>
+      <dd>{{ job.distributor or "—" }}</dd>
+    </div>
+    <div>
+      <dt>Updated (UTC)</dt>
+      <dd>{{ job.updated_at }}</dd>
+    </div>
+  </dl>
+
+  {% if job.notes %}
+  <h2>Internal notes</h2>
+  <p class="body">{{ job.notes }}</p>
+  {% endif %}
+
+  <p><strong>Public link</strong><br><code>{{ public_url }}</code></p>
+
+  <div class="btn-row no-print">
+    <button type="button" class="btn" onclick="copyText({{ public_url|tojson }}, this)">Copy link</button>
+    <button type="button" class="btn btn-quiet" onclick="copyText({{ sms_text|tojson }}, this)">Copy SMS/text blurb</button>
+    <button type="button" class="btn btn-quiet" onclick="copyText({{ email_text|tojson }}, this)">Copy email</button>
+    {% if can_notify %}
+    <form method="post" action="{{ url_for('notify_now', job_id=job.id) }}" style="display:inline;">
+      <button type="submit" class="btn btn-quiet">Notify customer now</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if job.customer_email or job.customer_phone %}
+  <p class="hint">
+    {% if job.customer_email %}Email: {{ job.customer_email }}{% endif %}
+    {% if job.customer_email and job.customer_phone %} · {% endif %}
+    {% if job.customer_phone %}Phone: {{ job.customer_phone }}{% endif %}
+  </p>
+  {% endif %}
+  {% if not smtp_configured and not sms_configured %}
+  <p class="hint">SMTP and Twilio are unset - share via Copy link. Notify stays off until a channel is configured.</p>
+  {% endif %}
+</section>
+
+<section class="card no-print">
+  <h2>Update milestone</h2>
+  <form method="post" action="{{ url_for('set_milestone', job_id=job.id) }}" class="stack" id="milestone-form"
+        onsubmit="return confirmBackward();">
+    <label>Milestone
+      <select name="milestone" id="milestone-select">
+        {% for key in MILESTONES %}
+        <option value="{{ key }}" {% if key == job.milestone %}selected{% endif %}>{{ MILESTONE_LABELS[key] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Note <span class="hint">(optional, shown on timeline)</span>
+      <input name="note" placeholder="Left supply house">
+    </label>
+    <label>ETA date
+      <input type="date" name="eta_date" value="{{ job.eta_date or '' }}">
+    </label>
+    {% if can_notify %}
+    <label class="check-row">
+      <input type="checkbox" name="notify" value="1" {% if notify_default %}checked{% endif %}>
+      Also notify customer
+    </label>
+    {% else %}
+    <p class="hint">Also notify: unavailable (no SMTP/Twilio destination).</p>
+    {% endif %}
+    <div class="btn-row">
+      <button type="submit" class="btn">Save milestone</button>
+    </div>
+  </form>
+  <script>
+    var currentOrder = {{ MILESTONE_ORDER[job.milestone] }};
+    function confirmBackward() {
+      var sel = document.getElementById("milestone-select");
+      var orders = {{ MILESTONE_ORDER | tojson }};
+      var next = orders[sel.value];
+      if (next < currentOrder) {
+        return confirm("Move milestone backward from {{ milestone_label(job.milestone) }} to " + sel.options[sel.selectedIndex].text + "?");
+      }
+      return true;
+    }
+  </script>
+</section>
+
+<section class="card no-print">
+  <h2>Paste distributor note</h2>
+  <p class="hint">Stores the text on the timeline for your reference. Does not auto-parse ETA - pick milestone and ETA above.</p>
+  <form method="post" action="{{ url_for('paste_distributor', job_id=job.id) }}" class="stack">
+    <label>Paste from distributor email
+      <textarea name="raw_paste" rows="5" placeholder="Paste tracking / ETA text here"></textarea>
+    </label>
+    <button type="submit" class="btn btn-quiet">Save paste</button>
+  </form>
+</section>
+
+<section class="card no-print copy-fields">
+  <h2>SMS / text blurb</h2>
+  <textarea readonly>{{ sms_text }}</textarea>
+  <h2>Email copy</h2>
+  <p class="hint">Subject: {{ email_subject }}</p>
+  <textarea readonly>{{ email_text }}</textarea>
+</section>
+
+<section class="card">
+  <h2>Timeline</h2>
+  <ul class="timeline">
+    {% for e in events %}
+    <li>
+      <div>
+        <span class="kind">{% if e.kind == 'milestone' and e.milestone %}{{ milestone_label(e.milestone) }}{% else %}{{ e.kind }}{% endif %}</span>
+        {% if e.note %}<div class="hint">{{ e.note }}</div>{% endif %}
+        {% if e.raw_paste %}<pre class="paste-block">{{ e.raw_paste }}</pre>{% endif %}
+      </div>
+      <span class="at">{{ e.at }} UTC</span>
+    </li>
+    {% else %}
+    <li class="empty">No events yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
